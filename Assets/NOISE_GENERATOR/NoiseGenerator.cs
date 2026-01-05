@@ -3,15 +3,14 @@ using UnityEngine;
 
 public class NoiseGenerator : MonoBehaviour
 {
-    public int height = 128;
-    public int width = 128;
+    public int resolution=128;
     public bool isBlackAndWhite = false;
 
     public Texture2D texture; 
     
     [Header("Value Noise")]
-    public int gridHeight = 64;
-    public int gridWidth = 64;
+    public int gridSize = 64;
+    public bool repeat=true;
     
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
@@ -37,17 +36,17 @@ public class NoiseGenerator : MonoBehaviour
     Texture2D GenerateWhiteNoise()
     {
         Texture2D generated_texture = new Texture2D(
-            width,
-            height,
+            resolution,
+            resolution,
             TextureFormat.RGBA32,
             false
         );
 
         generated_texture.wrapMode = TextureWrapMode.Clamp;
         generated_texture.filterMode = FilterMode.Point;
-        for (int i = 0; i < width; i++)
+        for (int i = 0; i < resolution; i++)
         {
-            for (int j = 0; j < height; j++)
+            for (int j = 0; j < resolution; j++)
             {
                 Color color;
                 if (isBlackAndWhite)
@@ -69,20 +68,30 @@ public class NoiseGenerator : MonoBehaviour
     Texture2D GenerateValueNoise()
     {
         Texture2D generated_texture = new Texture2D(
-            width,
-            height,
+            resolution,
+            resolution,
             TextureFormat.RGBA32,
             false
         );
 
         generated_texture.wrapMode = TextureWrapMode.Clamp;
         generated_texture.filterMode = FilterMode.Point;
-        
-        Color[] colors = new Color[gridWidth * gridHeight];
-        for (int i = 0; i < gridWidth; i++)
+
+        Color[] colors = new Color[gridSize * gridSize];
+        for (int i = 0; i < gridSize; i++)
         {
-            for (int j = 0; j < gridHeight; j++)
+            for (int j = 0; j < gridSize; j++)
             {
+                if(repeat && i==gridSize-1)
+                {
+                    colors[i * gridSize + j] = colors[j];         
+                    continue;          
+                }
+                else if(repeat && j == gridSize - 1)
+                {
+                    colors[i * gridSize + j] = colors[i * gridSize];    
+                    continue;
+                }
                 Color color;
                 if (isBlackAndWhite)
                 {
@@ -93,27 +102,27 @@ public class NoiseGenerator : MonoBehaviour
                 {
                     color = new Color(Random.Range(0f, 1f), Random.Range(0f, 1f), Random.Range(0f, 1f));
                 }
-                colors[i * gridWidth + j] = color;
+                colors[i * gridSize + j] = color;
             }
         }
         
         
-        int step = width / gridWidth;
-        for (int i = 0; i < width; i++)
+        int step = resolution / gridSize;
+        for (int i = 0; i < resolution; i++)
         {
-            for (int j = 0; j < height; j++)
+            for (int j = 0; j < resolution; j++)
             {
                 int stepCountX = i / step;
                 int stepCountY = j / step;
-                Color topLeft = colors[stepCountX*gridWidth + stepCountY];
-                Color topRight = colors[(stepCountX+1)*gridWidth + stepCountY];
-                Color bottomLeft = colors[stepCountX * gridWidth + stepCountY+1];
-                Color bottomRight = colors[(stepCountX+1) * gridWidth + stepCountY+1];
+                Color topLeft = colors[stepCountX*gridSize + stepCountY];
+                Color topRight = colors[(stepCountX+1)%gridSize*gridSize + stepCountY];
+                Color bottomLeft = colors[stepCountX * gridSize + (stepCountY+1)%gridSize];
+                Color bottomRight = colors[(stepCountX+1)%gridSize * gridSize + (stepCountY+1)%gridSize];
                 int relativeX = i % step;
                 int relativeY = j % step;
 
-                Color color = Color.Lerp(Color.Lerp(topLeft, topRight, relativeX),
-                    Color.Lerp(bottomLeft, bottomRight, relativeX), relativeY);
+                Color color = Color.Lerp(Color.Lerp(topLeft, topRight, (float)relativeX/step),
+                    Color.Lerp(bottomLeft, bottomRight, (float)relativeX/step), (float)relativeY/step);
                 generated_texture.SetPixel(i, j, color);
             }
         }
