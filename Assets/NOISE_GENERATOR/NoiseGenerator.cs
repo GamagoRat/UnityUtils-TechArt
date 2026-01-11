@@ -1,5 +1,8 @@
-using System.Globalization;
+using System;
+using System.Numerics;
 using UnityEngine;
+using Random = UnityEngine.Random;
+using Vector3 = UnityEngine.Vector3;
 
 public class NoiseGenerator : MonoBehaviour
 {
@@ -118,7 +121,62 @@ public class NoiseGenerator : MonoBehaviour
             }
         }
         
+        generated_texture.Apply();
+        return generated_texture;
+    }
+
+    Vector3 RandomUnitVector()
+    {
+        float theta = Random.Range(0, 2*MathF.PI);
+        float phi = Random.Range(0, 2*MathF.PI);
+
+        float x = MathF.Sin(phi) * MathF.Cos(theta);
+        float y = MathF.Sin(phi) * Mathf.Sin(theta);
+        float z = MathF.Cos(theta);
         
+        return new Vector3(x, y, z);
+    }
+
+    Texture2D GeneratePerlinNoise()
+    {
+        Texture2D generated_texture = new Texture2D(
+            width,
+            height,
+            TextureFormat.RGBA32,
+            false
+        );
+
+        generated_texture.wrapMode = TextureWrapMode.Clamp;
+        generated_texture.filterMode = FilterMode.Point;
+        
+        Vector3[] vectors = new Vector3[gridWidth * gridHeight];
+        for (int i = 0; i < gridWidth; i++)
+        {
+            for (int j = 0; j < gridHeight; j++)
+            {
+                
+                vectors[i * gridWidth + j] = RandomUnitVector();
+            }
+        }
+        
+        
+        int step = width / gridWidth;
+        for (int i = 0; i < width; i++)
+        {
+            for (int j = 0; j < height; j++)
+            {
+                int stepCountX = i / step;
+                int stepCountY = j / step;
+                Vector3 topLeft = vectors[stepCountX*gridWidth + stepCountY];
+                Vector3 topRight = vectors[(stepCountX+1)*gridWidth + stepCountY];
+                Vector3 bottomLeft = vectors[stepCountX * gridWidth + stepCountY+1];
+                Vector3 bottomRight = vectors[(stepCountX+1) * gridWidth + stepCountY+1];
+                int relativeX = i % step;
+                int relativeY = j % step;
+
+                //generated_texture.SetPixel(i, j, color);
+            }
+        }
         
         generated_texture.Apply();
         return generated_texture;
