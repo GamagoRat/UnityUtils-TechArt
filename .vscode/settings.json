@@ -67,5 +67,5 @@
         "*.sln": "*.csproj",
         "*.slnx": "*.csproj"
     },
-    "dotnet.defaultSolution": "UnitylsTechArt.slnx"
+    "dotnet.defaultSolution": "UnityUtils-TechArt.slnx"
 }
