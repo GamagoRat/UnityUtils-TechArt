@@ -74,7 +74,7 @@ public class NoiseGenerator : MonoBehaviour
         generated_texture.wrapMode = TextureWrapMode.Clamp;
         generated_texture.filterMode = FilterMode.Point;
 
-        int gridSize = (int)Mathf.Ceil(resolution/cellSize);
+        int gridSize = (int)Mathf.Ceil((float)resolution/cellSize);
 
         Color[] colors = new Color[gridSize * gridSize];
         for (int i = 0; i < gridSize; i++)
@@ -109,18 +109,19 @@ public class NoiseGenerator : MonoBehaviour
         {
             for (int j = 0; j < resolution; j++)
             {
-                int stepCountX = i / cellSize;
-                int stepCountY = j / cellSize;
-                Color topLeft = colors[stepCountX*gridSize + stepCountY];
-                Color topRight = colors[(stepCountX+1)%gridSize*gridSize + stepCountY];
-                Color bottomLeft = colors[stepCountX * gridSize + (stepCountY+1)%gridSize];
-                Color bottomRight = colors[(stepCountX+1)%gridSize * gridSize + (stepCountY+1)%gridSize];
-                int relativeX = i % cellSize;
-                int relativeY = j % cellSize;
+                int stepCountY = i / cellSize;
+                int stepCountX = j / cellSize;
+                Color bottomLeft = colors[stepCountY*gridSize + stepCountX];
+                Color topLeft = colors[(stepCountY+1)%gridSize*gridSize + stepCountX];
+                Color bottomRight = colors[stepCountY * gridSize + (stepCountX+1)%gridSize];
+                Color topRight = colors[(stepCountY+1)%gridSize * gridSize + (stepCountX+1)%gridSize];
+                int relativeY = i % cellSize;
+                int relativeX = j % cellSize;
 
-                Color color = Color.Lerp(Color.Lerp(topLeft, topRight, easingFunction.Evaluate((float)relativeX/cellSize)),
-                    Color.Lerp(bottomLeft, bottomRight, easingFunction.Evaluate((float)relativeX/cellSize)), easingFunction.Evaluate((float)relativeY/cellSize));
-                generated_texture.SetPixel(i, j, color);
+                Color color = Color.Lerp(Color.Lerp(bottomLeft, bottomRight, easingFunction.Evaluate((float)relativeX/cellSize)),
+                    Color.Lerp(topLeft, topRight, easingFunction.Evaluate((float)relativeX/cellSize)),
+                     easingFunction.Evaluate((float)relativeY/cellSize));
+                generated_texture.SetPixel(j, i, color);
             }
         }
         
@@ -131,12 +132,12 @@ public class NoiseGenerator : MonoBehaviour
     Vector3 RandomUnitVector(bool is2D)
     {
 
-        float theta = Random.Range(0, 2*MathF.PI);
-        float phi = is2D ? MathF.PI/2 : Random.Range(0, 2*MathF.PI);
+        float theta = Random.Range(0, 2*Mathf.PI);
+        float phi = is2D ? Mathf.PI/2f : Random.Range(0, 2*Mathf.PI);
 
-        float x = MathF.Sin(phi) * MathF.Cos(theta);
-        float y = MathF.Sin(phi) * Mathf.Sin(theta);
-        float z = MathF.Cos(phi);
+        float x = Mathf.Sin(phi) * Mathf.Cos(theta);
+        float y = Mathf.Sin(phi) * Mathf.Sin(theta);
+        float z = Mathf.Cos(phi);
         
         return new Vector3(x, y, z);
     }
@@ -153,7 +154,7 @@ public class NoiseGenerator : MonoBehaviour
         generated_texture.wrapMode = TextureWrapMode.Clamp;
         generated_texture.filterMode = FilterMode.Point;
 
-        int gridSize = (int)Mathf.Ceil(resolution/cellSize);
+        int gridSize = (int)Mathf.Ceil((float)resolution/cellSize);
 
         Vector2[] vectors = new Vector2[gridSize * gridSize];
         for (int i = 0; i < gridSize; i++)
@@ -181,27 +182,30 @@ public class NoiseGenerator : MonoBehaviour
             for (int j = 0; j < resolution; j++)
             {
                 
-                float relativeY = j % cellSize;
-                float relativeX = i % cellSize;
+                float relativeX = j % cellSize;
+                float relativeY = i % cellSize;
 
-                int stepCountX = i / cellSize;
-                int stepCountY = j / cellSize;
+                int stepCountY = i / cellSize;
+                int stepCountX = j / cellSize;
 
-                Vector2 cellPos = new Vector2(i, j);
+                Vector2 normalizedCellPos = new Vector2((float)relativeX/cellSize, (float)relativeY/cellSize);//Not really normalized
 
-                Vector2 topLeftCellPos = cellPos - new Vector2(stepCountX , stepCountY)*cellSize ;
-                Vector2 topRightCellPos = cellPos - new Vector2(stepCountX + 1  , stepCountY) * cellSize;
-                Vector2 bottomLeftCellPos = cellPos - new Vector2(stepCountX   , stepCountY+1) * cellSize;
-                Vector2 bottomRightCellPos = cellPos - new Vector2(stepCountX+1   , stepCountY+1) * cellSize;
+                Vector2 bottomLeftCellPos = normalizedCellPos ;
+                Vector2 bottomRightCellPos = normalizedCellPos - new Vector2(1  , 0) ;
+                Vector2 topLeftCellPos = normalizedCellPos - new Vector2(0   , 1) ;
+                Vector2 topRightCellPos = normalizedCellPos - new Vector2(1   , 1);
 
-                float topLeftDot = Vector2.Dot(vectors[stepCountX*gridSize + stepCountY], topLeftCellPos);
-                Debug.Log(topLeftDot);
-                float topRightDot = Vector2.Dot(vectors[(stepCountX+1)%gridSize*gridSize + stepCountY], topRightCellPos);
-                float bottomLeftDot = Vector2.Dot(vectors[stepCountX * gridSize + (stepCountY+1)%gridSize], bottomLeftCellPos);
-                float bottomRightDot = Vector2.Dot(vectors[(stepCountX+1)%gridSize * gridSize + (stepCountY+1)%gridSize], bottomRightCellPos);
+                float bottomLeftDot = Vector2.Dot(vectors[stepCountY*gridSize + stepCountX], bottomLeftCellPos);
+                float topLeftDot = Vector2.Dot(vectors[(stepCountY+1)%gridSize*gridSize + stepCountX], topLeftCellPos);
+                float bottomRightDot = Vector2.Dot(vectors[stepCountY * gridSize + (stepCountX+1)%gridSize], bottomRightCellPos);
+                float topRightDot = Vector2.Dot(vectors[(stepCountY+1)%gridSize * gridSize + (stepCountX+1)%gridSize], topRightCellPos);
 
-                float value = Mathf.Lerp(Mathf.Lerp(topLeftDot, topRightDot, easingFunction.Evaluate(relativeX/cellSize)),
-                    Mathf.Lerp(bottomLeftDot, bottomRightDot, easingFunction.Evaluate(relativeX/cellSize)), easingFunction.Evaluate(relativeY/cellSize));
+                float value =   Mathf.Lerp(Mathf.Lerp(bottomLeftDot, bottomRightDot, easingFunction.Evaluate(relativeX/cellSize)),
+                                Mathf.Lerp(topLeftDot, topRightDot, easingFunction.Evaluate(relativeX/cellSize)),                
+                                easingFunction.Evaluate(relativeY/cellSize));
+                
+                
+                value = (value+1)/2f;
                 generated_texture.SetPixel(i, j, new Color(value, value, value));
             }
         }
