@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Numerics;
 using UnityEngine;
 using Random = UnityEngine.Random;
@@ -25,9 +26,10 @@ public class NoiseGenerator : MonoBehaviour
     [ContextMenu("Generate")]
     void showGeneratedTexture()
     {
-        texture = GeneratePerlinNoise();
+        //texture = GeneratePerlinNoise();
         //texture = GenerateValueNoise();
         //texture = GenerateWhiteNoise();
+        texture = GenerateVoronoi();
     }
 
     Texture2D GenerateWhiteNoise()
@@ -212,6 +214,86 @@ public class NoiseGenerator : MonoBehaviour
         
         generated_texture.Apply();
         return generated_texture;
+    }
+    
+    Texture2D GenerateVoronoi()
+    {
+        Texture2D generated_texture = new Texture2D(
+            resolution,
+            resolution,
+            TextureFormat.RGBA32,
+            false
+        );
+
+        generated_texture.wrapMode = TextureWrapMode.Clamp;
+        generated_texture.filterMode = FilterMode.Point;
+
+        int gridSize = (int)Mathf.Ceil((float)resolution/cellSize);
+
+        Vector2Int[] points = new Vector2Int[gridSize * gridSize];
+        for (int i = 0; i < gridSize-1; i++)
+        {
+            for (int j = 0; j < gridSize-1; j++)
+            {
+                if(repeat && i==gridSize-1)
+                {
+                    points[i * (gridSize-1) + j] = points[j];         
+                    continue;          
+                }
+                else if(repeat && j == gridSize - 1)
+                {
+                    points[i * gridSize + j] = points[i * gridSize];    
+                    continue;
+                }
+
+                Vector2Int vector = new Vector2Int(j*cellSize, i*cellSize) + new Vector2Int(Random.Range(0, cellSize), Random.Range(0, cellSize));
+                points[i * gridSize + j] = vector;
+            }
+        }
+
+        float maxDistance = Mathf.Sqrt(2)*cellSize;
+
+        for (int i = 0; i < resolution; i++)
+        {
+            for (int j = 0; j < resolution; j++)
+            {
+                int stepCountY = i / cellSize;
+                int stepCountX = j / cellSize;
+
+                Debug.Log((stepCountY-1)%gridSize + " "  + " " +(stepCountX-1)%gridSize);
+
+                Vector2Int p1 = points[PositiveMod(stepCountY-1, gridSize)*gridSize + PositiveMod(stepCountX-1, gridSize)];
+                Vector2Int p2 = points[PositiveMod(stepCountY-1, gridSize)*gridSize + stepCountX];
+                Vector2Int p3 = points[PositiveMod(stepCountY-1, gridSize)*gridSize + (stepCountX+1)%gridSize];
+
+                Vector2Int p4 = points[stepCountY*gridSize + PositiveMod(stepCountX-1, gridSize)];
+                Vector2Int p5 = points[stepCountY*gridSize + stepCountX];
+                Vector2Int p6 = points[stepCountY*gridSize + (stepCountX+1)%gridSize];
+
+                Vector2Int p7 = points[(stepCountY+1)%gridSize*gridSize + PositiveMod(stepCountX-1, gridSize)];
+                Vector2Int p8 = points[(stepCountY+1)%gridSize*gridSize + stepCountX];
+                Vector2Int p9 = points[(stepCountY+1)%gridSize*gridSize + (stepCountX+1)%gridSize];
+
+                List<Vector2Int> closestPoints = new List<Vector2Int>{p1,p2,p3,p4,p5,p6,p7,p8,p9};
+
+                float minDistance = float.MaxValue;
+                foreach (var point in closestPoints)
+                {
+                    float d = Vector2.Distance(new Vector2(j,i), point);
+                    if(d < minDistance) minDistance = d;
+                }
+
+                minDistance/=maxDistance;//Normalize
+                generated_texture.SetPixel(i, j, new Color(minDistance, minDistance, minDistance));
+            }
+        }
+        
+        generated_texture.Apply();
+        return generated_texture;
+    }
+
+    int PositiveMod(int x, int m) {
+        return (x%m + m)%m;
     }
 
     
