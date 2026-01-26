@@ -262,6 +262,8 @@ public class NoiseGenerator : MonoBehaviour
 
                 Debug.Log((stepCountY-1)%gridSize + " "  + " " +(stepCountX-1)%gridSize);
 
+                //Changer la positions des points si ils sont dans le cas en dehors des 
+
                 Vector2Int p1 = points[PositiveMod(stepCountY-1, gridSize)*gridSize + PositiveMod(stepCountX-1, gridSize)];
                 Vector2Int p2 = points[PositiveMod(stepCountY-1, gridSize)*gridSize + stepCountX];
                 Vector2Int p3 = points[PositiveMod(stepCountY-1, gridSize)*gridSize + (stepCountX+1)%gridSize];
